@@ -41,17 +41,17 @@ const About = () => {
 
   const team = [
     {
-      name: "Priya Sharma",
+      name: "Nidhish Rathore",
       role: "Founder & CEO",
       bio: "With 15+ years in organic farming, Priya founded SeviPure to bridge the gap between farmers and health-conscious consumers."
     },
     {
-      name: "Raj Patel",
+      name: "Paras",
       role: "Head of Operations",
       bio: "Raj ensures our supply chain maintains the highest quality standards from farm to your doorstep."
     },
     {
-      name: "Anita Kumar",
+      name: "Arnav Nigam",
       role: "Quality Assurance",
       bio: "Anita oversees all quality control processes, ensuring every product meets our strict organic standards."
     }
