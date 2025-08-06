@@ -41,9 +41,10 @@ All colors MUST be HSL.
     --gradient-secondary: linear-gradient(135deg, hsl(120 30% 92%), hsl(120 45% 85%));
     --gradient-hero: linear-gradient(135deg, hsl(120 25% 15% / 0.9), hsl(120 60% 25% / 0.8));
 
-    /* Farm shadows */
-    --shadow-natural: 0 4px 20px hsl(120 25% 15% / 0.1);
-    --shadow-card: 0 2px 12px hsl(120 25% 15% / 0.08);
+    /* Modern shadows with depth */
+    --shadow-natural: 0 8px 32px hsl(120 25% 15% / 0.12);
+    --shadow-card: 0 4px 16px hsl(120 25% 15% / 0.08);
+    --shadow-hover: 0 12px 40px hsl(120 25% 15% / 0.16);
 
     --radius: 0.75rem;
 

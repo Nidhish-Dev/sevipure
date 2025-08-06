@@ -119,7 +119,8 @@ export default {
 			},
 			boxShadow: {
 				'natural': 'var(--shadow-natural)',
-				'card': 'var(--shadow-card)'
+				'card': 'var(--shadow-card)',
+				'hover': 'var(--shadow-hover)'
 			}
 		}
 	},
