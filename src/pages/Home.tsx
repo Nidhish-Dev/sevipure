@@ -96,11 +96,23 @@ const Home = () => {
               sourced directly from trusted farmers across India.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+              <Button 
+                size="lg" 
+                className="bg-accent hover:bg-accent/90 text-accent-foreground"
+                onClick={() => window.location.href = '/shop'}
+              >
                 Shop Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary">
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="border-white text-white hover:bg-white hover:text-primary"
+                onClick={() => {
+                  const featuresSection = document.getElementById('features');
+                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
                 Learn More
               </Button>
             </div>
@@ -109,7 +121,7 @@ const Home = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 bg-secondary">
+      <section id="features" className="py-16 bg-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center animate-slide-up">
@@ -227,6 +239,68 @@ const Home = () => {
         </div>
       </section>
 
+      {/* Why Choose Us Section */}
+      <section className="py-16 bg-gradient-to-br from-primary/5 to-accent/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose SeviPure?</h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              We're committed to bringing you the purest, most authentic organic products straight from the farm
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="text-center group">
+              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
+                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🌱</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Farm Fresh</h3>
+                <p className="text-muted-foreground">
+                  Sourced directly from certified organic farms across India
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center group">
+              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
+                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🏆</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Premium Quality</h3>
+                <p className="text-muted-foreground">
+                  Rigorous quality testing ensures only the best reaches you
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center group">
+              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
+                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🚚</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Fast Delivery</h3>
+                <p className="text-muted-foreground">
+                  Quick and secure delivery to preserve freshness
+                </p>
+              </div>
+            </div>
+
+            <div className="text-center group">
+              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
+                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">💚</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-3">Eco-Friendly</h3>
+                <p className="text-muted-foreground">
+                  Sustainable practices for a healthier planet
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Newsletter Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -242,7 +316,14 @@ const Home = () => {
               placeholder="Enter your email"
               className="flex-1 px-4 py-3 rounded-lg text-foreground"
             />
-            <Button variant="secondary" size="lg">
+            <Button 
+              variant="secondary" 
+              size="lg"
+              onClick={() => {
+                // TODO: Integrate with backend newsletter API
+                console.log("Newsletter subscription");
+              }}
+            >
               Subscribe
             </Button>
           </div>

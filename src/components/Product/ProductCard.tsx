@@ -24,12 +24,22 @@ interface ProductCardProps {
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
 
+  // TODO: Replace with backend API integration
+  // - POST /api/wishlist/add - add product to user's wishlist
+  // - DELETE /api/wishlist/remove - remove from wishlist
+  // - GET /api/wishlist - fetch user's wishlist items
   const handleWishlist = () => {
     setIsWishlisted(!isWishlisted);
+    // Backend API call would go here
+    console.log(isWishlisted ? "Removed from wishlist:" : "Added to wishlist:", product.name);
   };
 
+  // TODO: Replace with backend API integration
+  // - POST /api/cart/add - add product to user's cart
+  // - PUT /api/cart/update - update quantity
+  // - GET /api/cart - fetch cart items
   const handleAddToCart = () => {
-    // Add to cart logic
+    // Backend API call would go here
     console.log("Added to cart:", product.name);
   };
 
