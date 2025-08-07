@@ -107,7 +107,7 @@ const Home = () => {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="border-white text-white hover:bg-white hover:text-primary"
+                className="border-white text-green-900 hover:bg-white hover:text-primary"
                 onClick={() => {
                   const featuresSection = document.getElementById('features');
                   featuresSection?.scrollIntoView({ behavior: 'smooth' });
