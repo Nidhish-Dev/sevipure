@@ -1,9 +1,12 @@
+import { useState, useEffect } from "react";
 import { ArrowRight, Leaf, Truck, Shield, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ProductCard from "@/components/Product/ProductCard";
-import heroBg from "@/assets/hero-bg.jpg";
+import heroBg1 from "@/assets/hero-bg.jpg";
+import heroBg2 from "@/assets/hero-bg2.jpg"; // Placeholder for second image
+import heroBg3 from "@/assets/hero-bg3.jpg"; // Placeholder for third image
 import mustardOil from "@/assets/mustard-oil.jpg";
 import coconutOil from "@/assets/coconut-oil.jpg";
 import groundnutOil from "@/assets/groundnut-oil.jpg";
@@ -46,13 +49,6 @@ const Home = () => {
     },
   ];
 
-  const categories = [
-    { name: "Cold-Pressed Oils", count: 12, icon: "🥥" },
-    { name: "Cooking Oils", count: 8, icon: "🌻" },
-    { name: "Organic Spices", count: 24, icon: "🌶️" },
-    { name: "Farm Fresh Honey", count: 6, icon: "🍯" },
-  ];
-
   const testimonials = [
     {
       name: "Priya Sharma",
@@ -74,14 +70,37 @@ const Home = () => {
     },
   ];
 
+  const carouselImages = [heroBg1, heroBg2, heroBg3];
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
+    }, 5000); // Change slide every 5 seconds
+    return () => clearInterval(interval);
+  }, [carouselImages.length]);
+
+  const goToSlide = (index) => {
+    setCurrentSlide(index);
+  };
+
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section
-        className="relative h-[600px] bg-cover bg-center bg-no-repeat flex items-center"
-        style={{ backgroundImage: `url(${heroBg})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-hero"></div>
+      {/* Hero Section - Carousel */}
+      <section className="relative h-[600px] flex items-center overflow-hidden">
+        <div className="absolute inset-0">
+          {carouselImages.map((image, index) => (
+            <div
+              key={index}
+              className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
+                index === currentSlide ? "opacity-100" : "opacity-0"
+              }`}
+              style={{ backgroundImage: `url(${image})` }}
+            />
+          ))}
+          {/* Edit the gradient overlay here to adjust the tint (e.g., change colors or opacity) */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
+        </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
           <div className="max-w-3xl animate-fade-in">
             <Badge variant="secondary" className="mb-4">
@@ -92,66 +111,33 @@ const Home = () => {
               <span className="block text-accent">Delivered to Your Door</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-white/90">
-              Experience the finest organic oils and farm-fresh products, 
+              Experience the finest organic oils and farm-fresh products,
               sourced directly from trusted farmers across India.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-accent hover:bg-accent/90 text-accent-foreground"
-                onClick={() => window.location.href = '/shop'}
+                onClick={() => (window.location.href = "/products")}
               >
                 Shop Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="lg" 
-                className="border-white text-green-900 hover:bg-white hover:text-primary"
-                onClick={() => {
-                  const featuresSection = document.getElementById('features');
-                  featuresSection?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Learn More
-              </Button>
+             
             </div>
           </div>
         </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-16 bg-secondary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center animate-slide-up">
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Leaf className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">100% Organic</h3>
-              <p className="text-muted-foreground">
-                Certified organic products sourced directly from sustainable farms
-              </p>
-            </div>
-            <div className="text-center animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Truck className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
-              <p className="text-muted-foreground">
-                Fresh products delivered to your doorstep within 24-48 hours
-              </p>
-            </div>
-            <div className="text-center animate-slide-up" style={{ animationDelay: "0.4s" }}>
-              <div className="bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Shield className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Assured</h3>
-              <p className="text-muted-foreground">
-                Rigorous quality checks ensure you get only the best products
-              </p>
-            </div>
-          </div>
+        {/* Carousel Navigation Dots */}
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+          {carouselImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`h-3 w-3 rounded-full transition-all duration-300 ${
+                index === currentSlide ? "bg-white scale-125" : "bg-white/50"
+              }`}
+            />
+          ))}
         </div>
       </section>
 
@@ -164,7 +150,7 @@ const Home = () => {
               Discover our handpicked selection of premium organic oils and farm-fresh products
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
@@ -172,36 +158,14 @@ const Home = () => {
           </div>
 
           <div className="text-center mt-12">
-            <Button size="lg" variant="outline">
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => (window.location.href = "/products")}
+            >
               View All Products
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Categories Section */}
-      <section className="py-16 bg-muted">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Shop by Category</h2>
-            <p className="text-xl text-muted-foreground">
-              Explore our wide range of organic products
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <Card key={index} className="hover:shadow-natural transition-all duration-300 hover:-translate-y-1 cursor-pointer">
-                <CardContent className="p-6 text-center">
-                  <div className="text-4xl mb-4">{category.icon}</div>
-                  <h3 className="font-semibold mb-2">{category.name}</h3>
-                  <p className="text-muted-foreground text-sm">
-                    {category.count} products
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
           </div>
         </div>
       </section>
@@ -235,97 +199,6 @@ const Home = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Us Section */}
-      <section className="py-16 bg-gradient-to-br from-primary/5 to-accent/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose SeviPure?</h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              We're committed to bringing you the purest, most authentic organic products straight from the farm
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="text-center group">
-              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🌱</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Farm Fresh</h3>
-                <p className="text-muted-foreground">
-                  Sourced directly from certified organic farms across India
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center group">
-              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🏆</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Premium Quality</h3>
-                <p className="text-muted-foreground">
-                  Rigorous quality testing ensures only the best reaches you
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center group">
-              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🚚</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Fast Delivery</h3>
-                <p className="text-muted-foreground">
-                  Quick and secure delivery to preserve freshness
-                </p>
-              </div>
-            </div>
-
-            <div className="text-center group">
-              <div className="bg-white shadow-natural rounded-2xl p-8 group-hover:shadow-elegant transition-all duration-300">
-                <div className="w-16 h-16 bg-gradient-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">💚</span>
-                </div>
-                <h3 className="text-xl font-semibold mb-3">Eco-Friendly</h3>
-                <p className="text-muted-foreground">
-                  Sustainable practices for a healthier planet
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-16 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
-            Stay Updated with SeviPure
-          </h2>
-          <p className="text-xl mb-8 text-primary-foreground/90">
-            Get the latest updates on new products, special offers, and organic living tips
-          </p>
-          <div className="flex flex-col sm:flex-row max-w-md mx-auto gap-4">
-            <input
-              type="email"
-              placeholder="Enter your email"
-              className="flex-1 px-4 py-3 rounded-lg text-foreground"
-            />
-            <Button 
-              variant="secondary" 
-              size="lg"
-              onClick={() => {
-                // TODO: Integrate with backend newsletter API
-                console.log("Newsletter subscription");
-              }}
-            >
-              Subscribe
-            </Button>
           </div>
         </div>
       </section>
