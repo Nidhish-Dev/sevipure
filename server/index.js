@@ -54,7 +54,7 @@ app.listen(PORT, () => {
   console.log(`MongoDB connected successfully`);
   
   // 🔥 Keep-Alive Function
-  const baseUrl = process.env.BASE_URL || `http://localhost:${PORT}`;
+  const baseUrl = process.env.BASE_URL || `https://sevipure-server.onrender.com`;
   
   setInterval(async () => {
     try {
