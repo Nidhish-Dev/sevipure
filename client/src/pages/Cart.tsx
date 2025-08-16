@@ -185,10 +185,7 @@ const Cart = () => {
             <Button 
               size="lg" 
               className="w-full"
-              onClick={() => {
-                // TODO: Integrate with backend checkout API
-                console.log("Proceed to checkout");
-              }}
+              onClick={() => navigate('/checkout')}
             >
               Proceed to Checkout
             </Button>

@@ -8,6 +8,8 @@ const axios = require('axios'); // <-- Add axios for HTTP requests
 // Import routes
 const authRoutes = require('./routes/auth');
 const cartRoutes = require('./routes/cart');
+const orderRoutes = require('./routes/order');
+const productRoutes = require('./routes/product');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -37,6 +39,8 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/order', orderRoutes);
+app.use('/api/products', productRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

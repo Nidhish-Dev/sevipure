@@ -8,7 +8,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 
 interface Product {
-  id: string;
+  _id?: string;
+  id?: string;
   name: string;
   price: number;
   originalPrice?: number;
@@ -58,7 +59,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
     setAddingToCart(true);
     try {
       await addToCart({
-        productId: product.id, // Use the id field from the current product data
+        productId: product._id || product.id,
         quantity: 1,
         price: product.price,
         name: product.name,
@@ -104,16 +105,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </div>
 
         {/* Wishlist Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          className="absolute top-2 right-2 text-white hover:text-red-500 bg-black/20 hover:bg-white/90"
-          onClick={handleWishlist}
-        >
-          <Heart
-            className={`h-4 w-4 ${isWishlisted ? "fill-red-500 text-red-500" : ""}`}
-          />
-        </Button>
+      
 
         {/* Quick Add to Cart */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
@@ -138,21 +130,8 @@ const ProductCard = ({ product }: ProductCardProps) => {
         </h3>
 
         <div className="flex items-center mb-2">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`h-3 w-3 ${
-                  i < Math.floor(product.rating)
-                    ? "fill-yellow-400 text-yellow-400"
-                    : "text-gray-300"
-                }`}
-              />
-            ))}
-          </div>
-          <span className="text-sm text-muted-foreground ml-1">
-            ({product.reviews})
-          </span>
+         
+          
         </div>
 
         <div className="flex items-center space-x-2">

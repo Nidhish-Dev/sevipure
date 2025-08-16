@@ -5,49 +5,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ProductCard from "@/components/Product/ProductCard";
 import heroBg1 from "@/assets/hero-bg.jpg";
-import heroBg2 from "@/assets/hero-bg2.jpg"; // Placeholder for second image
-import heroBg3 from "@/assets/hero-bg3.jpg"; // Placeholder for third image
-import mustardOil from "@/assets/mustard-oil.jpg";
-import coconutOil from "@/assets/coconut-oil.jpg";
-import groundnutOil from "@/assets/groundnut-oil.jpg";
+import heroBg2 from "@/assets/hero-bg2.jpg";
+import heroBg3 from "@/assets/hero-bg3.jpg";
 
 const Home = () => {
-  const featuredProducts = [
-    {
-      id: "1",
-      name: "Premium Cold-Pressed Mustard Oil",
-      price: 299,
-      originalPrice: 399,
-      image: mustardOil,
-      rating: 4.8,
-      reviews: 128,
-      category: "Cold-Pressed Oils",
-      isOrganic: true,
-      discount: 25,
-    },
-    {
-      id: "2",
-      name: "Pure Virgin Coconut Oil",
-      price: 249,
-      originalPrice: 299,
-      image: coconutOil,
-      rating: 4.9,
-      reviews: 95,
-      category: "Virgin Oils",
-      isOrganic: true,
-      discount: 17,
-    },
-    {
-      id: "3",
-      name: "Fresh Groundnut Oil",
-      price: 189,
-      image: groundnutOil,
-      rating: 4.7,
-      reviews: 73,
-      category: "Cooking Oils",
-      isOrganic: true,
-    },
-  ];
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    fetch("https://sevipure-server.onrender.com/api/products")
+      .then((res) => res.json())
+      .then((data) => {
+        setProducts(data.products || []);
+        setLoading(false);
+      })
+      .catch(() => {
+        setError("Failed to load products");
+        setLoading(false);
+      });
+  }, []);
 
   const testimonials = [
     {
@@ -76,7 +54,7 @@ const Home = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % carouselImages.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
     return () => clearInterval(interval);
   }, [carouselImages.length]);
 
@@ -98,7 +76,6 @@ const Home = () => {
               style={{ backgroundImage: `url(${image})` }}
             />
           ))}
-          {/* Edit the gradient overlay here to adjust the tint (e.g., change colors or opacity) */}
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 to-black/60" />
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
@@ -123,11 +100,9 @@ const Home = () => {
                 Shop Now
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-             
             </div>
           </div>
         </div>
-        {/* Carousel Navigation Dots */}
         <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
           {carouselImages.map((_, index) => (
             <button
@@ -150,13 +125,19 @@ const Home = () => {
               Discover our handpicked selection of premium organic oils and farm-fresh products
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {loading ? (
+              <div className="col-span-3 text-center">Loading products...</div>
+            ) : error ? (
+              <div className="col-span-3 text-center text-red-500">{error}</div>
+            ) : products.length === 0 ? (
+              <div className="col-span-3 text-center">No products found.</div>
+            ) : (
+              products.slice(0, 6).map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))
+            )}
           </div>
-
           <div className="text-center mt-12">
             <Button
               size="lg"
@@ -179,7 +160,6 @@ const Home = () => {
               Trusted by thousands of families across India
             </p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {testimonials.map((testimonial, index) => (
               <Card key={index} className="text-center">

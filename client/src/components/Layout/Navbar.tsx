@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, LogOut, Settings } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
 
@@ -24,7 +24,7 @@ const Navbar = () => {
   };
 
   // Get display name (full name or first name if full name is not available)
-  const getDisplayName = () => {
+  const getDisplayName = (): string => {
     if (user?.fullName) {
       return user.fullName;
     }
@@ -41,7 +41,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex-shrink-0">
             <Link to="/" className="text-2xl font-bold text-primary">
-              SeviPure
+              <img className="h-14 rounded-lg" src="/logo.jpeg" alt="" />
             </Link>
           </div>
 
@@ -68,6 +68,11 @@ const Navbar = () => {
             <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
               Contact
             </Link>
+            {isAuthenticated && (
+              <Link to="/my-orders" className="text-foreground hover:text-primary transition-colors">
+                My Orders
+              </Link>
+            )}
           </div>
 
           {/* Action Buttons - Desktop */}
@@ -78,6 +83,7 @@ const Navbar = () => {
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
                     <span>{getDisplayName()}</span>
+                    <ChevronDown className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -85,6 +91,11 @@ const Navbar = () => {
                     <Link to="/profile" className="flex items-center space-x-2">
                       <Settings className="h-4 w-4" />
                       <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/my-orders" className="flex items-center space-x-2">
+                      <span>My Orders</span>
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -168,6 +179,15 @@ const Navbar = () => {
                 >
                   Contact
                 </Link>
+                {isAuthenticated && (
+                  <Link
+                    to="/my-orders"
+                    className="block px-4 py-3 text-lg font-medium text-foreground hover:bg-primary/10 hover:text-primary transition-colors rounded-md"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    My Orders
+                  </Link>
+                )}
               </div>
 
               {/* Mobile Action Buttons */}
@@ -178,6 +198,11 @@ const Navbar = () => {
                       <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
                         <Settings className="h-5 w-5 mr-2" />
                         Profile
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/my-orders" onClick={() => setIsMenuOpen(false)}>
+                        My Orders
                       </Link>
                     </Button>
                     <Button variant="outline" size="lg" className="w-full text-lg" onClick={handleLogout}>
