@@ -75,7 +75,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/auth/send-otp', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -125,7 +125,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/auth/verify-otp', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/auth/verify-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -167,7 +167,7 @@ const Login = () => {
   const handleResendOTP = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/auth/resend-otp', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/auth/resend-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -61,7 +61,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const loadCartFromServer = useCallback(async () => {
     try {
       console.log('Fetching cart from server...');
-      const response = await fetch('http://localhost:3000/api/cart', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/cart', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -89,7 +89,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
     try {
       console.log('Adding to cart:', product);
-      const response = await fetch('http://localhost:3000/api/cart/add', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/cart/add', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -117,7 +117,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     if (!isAuthenticated || !token) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/update', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/cart/update', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -142,7 +142,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     if (!isAuthenticated || !token) return;
 
     try {
-      const response = await fetch(`http://localhost:3000/api/cart/remove/${productId}`, {
+      const response = await fetch(`https://sevipure-server.onrender.com/api/cart/remove/${productId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -163,7 +163,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     if (!isAuthenticated || !token) return;
 
     try {
-      const response = await fetch('http://localhost:3000/api/cart/clear', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/cart/clear', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
