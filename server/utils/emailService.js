@@ -17,22 +17,37 @@ const sendOTPEmail = async (email, otp) => {
       to: email,
       subject: 'Your Login OTP - Sevipure',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333; text-align: center;">Sevipure Login OTP</h2>
-          <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <p style="font-size: 16px; color: #555; margin-bottom: 15px;">Your login OTP is:</p>
-            <div style="background-color: #007bff; color: white; font-size: 24px; font-weight: bold; text-align: center; padding: 15px; border-radius: 5px; letter-spacing: 5px;">
-              ${otp}
-            </div>
-            <p style="font-size: 14px; color: #666; margin-top: 15px; text-align: center;">
-              This OTP will expire in 2 minutes.<br>
-              If you didn't request this, please ignore this email.
-            </p>
-          </div>
-          <p style="text-align: center; color: #999; font-size: 12px;">
-            © 2024 Sevipure. All rights reserved.
-          </p>
-        </div>
+       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+  
+  <!-- Header -->
+  <div style="background: #17692D; padding: 20px; text-align: center;">
+    <h2 style="color: #fff; margin: 0; font-size: 24px; font-weight: 600;"> SeviPure Login OTP</h2>
+  </div>
+  
+  <!-- Content -->
+  <div style="padding: 30px; background-color: #f9fdf9;">
+    <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: center;">
+      Use the OTP below to securely log in to your <strong>Sevipure</strong> account:
+    </p>
+
+    <!-- OTP Box -->
+    <div style="background: #17692D; color: #fff; font-size: 28px; font-weight: bold; text-align: center; padding: 18px; border-radius: 8px; letter-spacing: 8px; margin: 0 auto; width: fit-content; box-shadow: 0 3px 10px rgba(23,105,45,0.3);">
+      ${otp}
+    </div>
+
+    <!-- Expiry Info -->
+    <p style="font-size: 14px; color: #555; margin-top: 25px; text-align: center; line-height: 1.6;">
+      ⏳ This OTP will expire in <strong>2 minutes</strong>.<br>
+      If you did not request this login, please ignore this email.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div style="background-color: #f1f8f3; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+    © 2025 <strong>Sevipure</strong>. All rights reserved.
+  </div>
+</div>
+
       `
     };
 
