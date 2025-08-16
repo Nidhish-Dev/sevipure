@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { Mail, User, Phone } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, User, Phone, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 
@@ -21,47 +22,182 @@ const indianStates = [
 
 const Signup = () => {
   const [step, setStep] = useState(1);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: "",
     middleName: "",
     lastName: "",
-    contactNo: "",
     email: "",
-    pincode: "",
-    flat: "",
-    area: "",
-    landmark: "",
-    townCity: "",
-    state: ""
+    phone: "",
+    address: {
+      flatHouseNo: "",
+      areaStreet: "",
+      landmark: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "India"
+    }
   });
 
-  const handleInputChange = (e) => {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    if (name.startsWith('address.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        address: {
+          ...prev.address,
+          [field]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
+  };
+
+  const handleStateSelect = (value: string) => {
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      address: {
+        ...prev.address,
+        state: value
+      }
     }));
   };
 
-  const handleStateSelect = (value) => {
-    setFormData(prev => ({ ...prev, state: value }));
+  const validateStep1 = () => {
+    if (!formData.firstName.trim()) {
+      toast({
+        title: "First Name Required",
+        description: "Please enter your first name",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.lastName.trim()) {
+      toast({
+        title: "Last Name Required",
+        description: "Please enter your last name",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.email.trim()) {
+      toast({
+        title: "Email Required",
+        description: "Please enter your email address",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.phone.trim() || formData.phone.length !== 10) {
+      toast({
+        title: "Invalid Phone Number",
+        description: "Please enter a valid 10-digit phone number",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
   };
 
-  const handleNext = (e) => {
+  const validateStep2 = () => {
+    if (!formData.address.flatHouseNo.trim()) {
+      toast({
+        title: "Flat/House Number Required",
+        description: "Please enter your flat or house number",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.address.areaStreet.trim()) {
+      toast({
+        title: "Area/Street Required",
+        description: "Please enter your area or street",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.address.city.trim()) {
+      toast({
+        title: "City Required",
+        description: "Please enter your city",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.address.state.trim()) {
+      toast({
+        title: "State Required",
+        description: "Please select your state",
+        variant: "destructive"
+      });
+      return false;
+    }
+    if (!formData.address.zipCode.trim() || formData.address.zipCode.length !== 6) {
+      toast({
+        title: "Invalid ZIP Code",
+        description: "Please enter a valid 6-digit ZIP code",
+        variant: "destructive"
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const handleNext = (e: React.FormEvent) => {
     e.preventDefault();
-    setStep(2);
+    if (validateStep1()) {
+      setStep(2);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Signup attempt:", formData);
-    // Handle signup logic here
-  };
+    if (!validateStep2()) return;
 
-  const filteredStates = indianStates.filter(state =>
-    state.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+    setLoading(true);
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Account Created Successfully",
+          description: "Please login with your email to continue",
+        });
+        navigate('/login');
+      } else {
+        toast({
+          title: "Signup Failed",
+          description: data.message || "Something went wrong. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create account. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -73,7 +209,7 @@ const Signup = () => {
             <CardHeader className="text-center">
               <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
               <CardDescription>
-                Sign up for a new SeviPure account
+                {step === 1 ? 'Step 1: Personal Information' : 'Step 2: Address Information'}
               </CardDescription>
             </CardHeader>
 
@@ -82,7 +218,7 @@ const Signup = () => {
                 <CardContent className="space-y-6">
                   {/* First Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
+                    <Label htmlFor="firstName">First Name *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -117,7 +253,7 @@ const Signup = () => {
 
                   {/* Last Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
+                    <Label htmlFor="lastName">Last Name *</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -133,28 +269,9 @@ const Signup = () => {
                     </div>
                   </div>
 
-                  {/* Contact Number */}
-                  <div className="space-y-2">
-                    <Label htmlFor="contactNo">Contact Number</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="contactNo"
-                        name="contactNo"
-                        type="tel"
-                        pattern="[0-9]{10}"
-                        placeholder="Enter your 10-digit contact number"
-                        value={formData.contactNo}
-                        onChange={handleInputChange}
-                        className="pl-10"
-                        required
-                      />
-                    </div>
-                  </div>
-
                   {/* Email */}
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
+                    <Label htmlFor="email">Email Address *</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -163,6 +280,25 @@ const Signup = () => {
                         type="email"
                         placeholder="Enter your email"
                         value={formData.email}
+                        onChange={handleInputChange}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number *</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        pattern="[0-9]{10}"
+                        placeholder="Enter your 10-digit phone number"
+                        value={formData.phone}
                         onChange={handleInputChange}
                         className="pl-10"
                         required
@@ -186,44 +322,33 @@ const Signup = () => {
             ) : (
               <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-6">
-                  {/* Pincode */}
+                  {/* Flat, House no., Building */}
                   <div className="space-y-2">
-                    <Label htmlFor="pincode">Pincode</Label>
-                    <Input
-                      id="pincode"
-                      name="pincode"
-                      type="text"
-                      pattern="[0-9]{6}"
-                      placeholder="Enter 6-digit PIN code"
-                      value={formData.pincode}
-                      onChange={handleInputChange}
-                      required
-                    />
+                    <Label htmlFor="flatHouseNo">Flat, House no., Building *</Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="flatHouseNo"
+                        name="address.flatHouseNo"
+                        type="text"
+                        placeholder="Enter flat/house no."
+                        value={formData.address.flatHouseNo}
+                        onChange={handleInputChange}
+                        className="pl-10"
+                        required
+                      />
+                    </div>
                   </div>
 
-                  {/* Flat/House No. */}
+                  {/* Area, Street, Sector, Village */}
                   <div className="space-y-2">
-                    <Label htmlFor="flat">Flat, House no., Building</Label>
+                    <Label htmlFor="areaStreet">Area, Street, Sector, Village *</Label>
                     <Input
-                      id="flat"
-                      name="flat"
-                      type="text"
-                      placeholder="Enter flat/house no."
-                      value={formData.flat}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  {/* Area/Street */}
-                  <div className="space-y-2">
-                    <Label htmlFor="area">Area, Street, Sector, Village</Label>
-                    <Input
-                      id="area"
-                      name="area"
+                      id="areaStreet"
+                      name="address.areaStreet"
                       type="text"
                       placeholder="Enter area/street"
-                      value={formData.area}
+                      value={formData.address.areaStreet}
                       onChange={handleInputChange}
                       required
                     />
@@ -234,23 +359,23 @@ const Signup = () => {
                     <Label htmlFor="landmark">Landmark</Label>
                     <Input
                       id="landmark"
-                      name="landmark"
+                      name="address.landmark"
                       type="text"
                       placeholder="E.g. near Apollo Hospital"
-                      value={formData.landmark}
+                      value={formData.address.landmark}
                       onChange={handleInputChange}
                     />
                   </div>
 
-                  {/* Town/City */}
+                  {/* City */}
                   <div className="space-y-2">
-                    <Label htmlFor="townCity">Town/City</Label>
+                    <Label htmlFor="city">City *</Label>
                     <Input
-                      id="townCity"
-                      name="townCity"
+                      id="city"
+                      name="address.city"
                       type="text"
-                      placeholder="Enter town/city"
-                      value={formData.townCity}
+                      placeholder="Enter your city"
+                      value={formData.address.city}
                       onChange={handleInputChange}
                       required
                     />
@@ -258,20 +383,13 @@ const Signup = () => {
 
                   {/* State */}
                   <div className="space-y-2">
-                    <Label htmlFor="state">State</Label>
-                    <Input
-                      type="text"
-                      placeholder="Search states..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="mb-2"
-                    />
-                    <Select onValueChange={handleStateSelect} value={formData.state}>
+                    <Label htmlFor="state">State *</Label>
+                    <Select onValueChange={handleStateSelect} value={formData.address.state}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a state" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredStates.map(state => (
+                        {indianStates.map(state => (
                           <SelectItem key={state} value={state}>
                             {state}
                           </SelectItem>
@@ -279,11 +397,39 @@ const Signup = () => {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* ZIP Code */}
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">ZIP Code *</Label>
+                    <Input
+                      id="zipCode"
+                      name="address.zipCode"
+                      type="text"
+                      pattern="[0-9]{6}"
+                      placeholder="Enter 6-digit ZIP code"
+                      value={formData.address.zipCode}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  {/* Country */}
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country</Label>
+                    <Input
+                      id="country"
+                      name="address.country"
+                      type="text"
+                      value={formData.address.country}
+                      disabled
+                      className="bg-muted"
+                    />
+                  </div>
                 </CardContent>
 
                 <CardFooter className="flex flex-col space-y-4">
-                  <Button type="submit" className="w-full">
-                    Sign Up
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? 'Creating Account...' : 'Create Account'}
                   </Button>
                   <Button
                     type="button"

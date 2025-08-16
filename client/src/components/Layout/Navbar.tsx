@@ -1,11 +1,38 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, LogOut, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isAuthenticated, logout } = useAuth();
+  const { cartCount } = useCart();
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+  };
+
+  // Get display name (full name or first name if full name is not available)
+  const getDisplayName = () => {
+    if (user?.fullName) {
+      return user.fullName;
+    }
+    if (user?.firstName && user?.lastName) {
+      return `${user.firstName} ${user.lastName}`;
+    }
+    return user?.firstName || 'User';
+  };
 
   return (
     <nav className="bg-background border-b border-border sticky top-0 z-50 shadow-card">
@@ -45,18 +72,45 @@ const Navbar = () => {
 
           {/* Action Buttons - Desktop */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/login">
-                <User className="h-4 w-4 mr-2" />
-                Login
-              </Link>
-            </Button>
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
+                    <span>{getDisplayName()}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center space-x-2">
+                      <Settings className="h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">
+                  <User className="h-4 w-4 mr-2" />
+                  Login
+                </Link>
+              </Button>
+            )}
+            
             <Button variant="ghost" size="sm" className="relative" asChild>
               <Link to="/cart">
                 <ShoppingCart className="h-4 w-4" />
-                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                  0
-                </span>
+                {cartCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
               </Link>
             </Button>
           </div>
@@ -118,19 +172,37 @@ const Navbar = () => {
 
               {/* Mobile Action Buttons */}
               <div className="flex flex-col space-y-3 pt-4 border-t border-border">
-                <Button variant="outline" size="lg" className="w-full text-lg" asChild>
-                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                    <User className="h-5 w-5 mr-2" />
-                    Login
-                  </Link>
-                </Button>
+                {isAuthenticated && user ? (
+                  <>
+                    <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/profile" onClick={() => setIsMenuOpen(false)}>
+                        <Settings className="h-5 w-5 mr-2" />
+                        Profile
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full text-lg" onClick={handleLogout}>
+                      <LogOut className="h-5 w-5 mr-2" />
+                      Logout
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                      <User className="h-5 w-5 mr-2" />
+                      Login
+                    </Link>
+                  </Button>
+                )}
+                
                 <Button variant="outline" size="lg" className="w-full relative text-lg" asChild>
                   <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
                     <ShoppingCart className="h-5 w-5 mr-2" />
                     Cart
-                    <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
-                      0
-                    </span>
+                    {cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
                   </Link>
                 </Button>
               </div>

@@ -3,6 +3,9 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 interface Product {
   id: string;
@@ -23,24 +26,58 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [addingToCart, setAddingToCart] = useState(false);
+  
+  const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { toast } = useToast();
 
   // TODO: Replace with backend API integration
   // - POST /api/wishlist/add - add product to user's wishlist
   // - DELETE /api/wishlist/remove - remove from wishlist
   // - GET /api/wishlist - fetch user's wishlist items
   const handleWishlist = () => {
+    if (!isAuthenticated) {
+      // Redirect to login page if not authenticated
+      window.location.href = '/login';
+      return;
+    }
+    
     setIsWishlisted(!isWishlisted);
     // Backend API call would go here
     console.log(isWishlisted ? "Removed from wishlist:" : "Added to wishlist:", product.name);
   };
 
-  // TODO: Replace with backend API integration
-  // - POST /api/cart/add - add product to user's cart
-  // - PUT /api/cart/update - update quantity
-  // - GET /api/cart - fetch cart items
-  const handleAddToCart = () => {
-    // Backend API call would go here
-    console.log("Added to cart:", product.name);
+  const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      // Redirect to login page if not authenticated
+      window.location.href = '/login';
+      return;
+    }
+
+    setAddingToCart(true);
+    try {
+      await addToCart({
+        productId: product.id, // Use the id field from the current product data
+        quantity: 1,
+        price: product.price,
+        name: product.name,
+        image: product.image
+      });
+      
+      toast({
+        title: "Added to Cart",
+        description: `${product.name} has been added to your cart`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to add item to cart. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   return (
@@ -82,10 +119,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
           <Button
             onClick={handleAddToCart}
+            disabled={addingToCart}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            Quick Add
+            {addingToCart ? 'Adding...' : 'Quick Add'}
           </Button>
         </div>
       </div>
@@ -133,9 +171,10 @@ const ProductCard = ({ product }: ProductCardProps) => {
         <Button
           className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={handleAddToCart}
+          disabled={addingToCart}
         >
           <ShoppingCart className="h-4 w-4 mr-2" />
-          Add to Cart
+          {addingToCart ? 'Adding to Cart...' : 'Add to Cart'}
         </Button>
       </CardFooter>
     </Card>

@@ -6,66 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 
-// TODO: Replace with backend API integration
-// - GET /api/cart - fetch user's cart items
-// - PUT /api/cart/items/:id - update item quantity
-// - DELETE /api/cart/items/:id - remove item from cart
-// - POST /api/cart/checkout - process checkout
-// - GET /api/cart/totals - calculate totals with tax and shipping
-
 const Cart = () => {
   const navigate = useNavigate();
-  
-  // TODO: Replace with actual cart state from backend/context
-  const [cartItems, setCartItems] = useState([
-    {
-      id: "1",
-      name: "Premium Cold-Pressed Mustard Oil",
-      price: 299,
-      originalPrice: 399,
-      image: "/src/assets/mustard-oil.jpg",
-      quantity: 2,
-      category: "Cold-Pressed Oils",
-    },
-    {
-      id: "2", 
-      name: "Pure Virgin Coconut Oil",
-      price: 249,
-      originalPrice: 299,
-      image: "/src/assets/coconut-oil.jpg", 
-      quantity: 1,
-      category: "Virgin Oils",
-    },
-  ]);
-
+  const { items: cartItems, updateQuantity, removeFromCart, totalAmount } = useCart();
   const [promoCode, setPromoCode] = useState("");
 
-  // TODO: Replace with backend API call
-  const updateQuantity = (id: string, newQuantity: number) => {
-    if (newQuantity === 0) {
-      removeItem(id);
-      return;
+  // Calculate shipping and tax based on actual cart total
+  const shipping = totalAmount > 500 ? 0 : 50;
+  const discount = cartItems.reduce((sum, item) => {
+    if (item.originalPrice && item.originalPrice > item.price) {
+      return sum + ((item.originalPrice - item.price) * item.quantity);
     }
-    setCartItems(items =>
-      items.map(item =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  // TODO: Replace with backend API call
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
-  };
-
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const discount = cartItems.reduce((sum, item) => sum + ((item.originalPrice - item.price) * item.quantity), 0);
-  const shipping = subtotal > 500 ? 0 : 50;
-  const tax = Math.round(subtotal * 0.18); // 18% GST
-  const total = subtotal + shipping + tax;
+    return sum;
+  }, 0);
+  const tax = Math.round(totalAmount * 0.18); // 18% GST
+  const total = totalAmount + shipping + tax;
 
   if (cartItems.length === 0) {
     return (
@@ -78,7 +37,7 @@ const Cart = () => {
             <p className="text-muted-foreground mb-8">
               Looks like you haven't added any items to your cart yet.
             </p>
-            <Button onClick={() => navigate("/shop")} size="lg">
+            <Button onClick={() => navigate("/")} size="lg">
               Start Shopping
             </Button>
           </div>
@@ -96,7 +55,7 @@ const Cart = () => {
         <div className="mb-8">
           <Button
             variant="ghost"
-            onClick={() => navigate("/shop")}
+            onClick={() => navigate("/")}
             className="mb-4"
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -109,7 +68,7 @@ const Cart = () => {
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
-              <Card key={item.id} className="p-6">
+              <Card key={item.productId} className="p-6">
                 <div className="flex items-start gap-4">
                   <img
                     src={item.image}
@@ -120,14 +79,11 @@ const Cart = () => {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <h3 className="font-semibold text-lg">{item.name}</h3>
-                        <Badge variant="secondary" className="text-xs">
-                          {item.category}
-                        </Badge>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeFromCart(item.productId)}
                         className="text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -137,7 +93,7 @@ const Cart = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-lg font-bold text-primary">₹{item.price}</span>
-                        {item.originalPrice && (
+                        {item.originalPrice && item.originalPrice > item.price && (
                           <span className="text-sm text-muted-foreground line-through">
                             ₹{item.originalPrice}
                           </span>
@@ -148,7 +104,7 @@ const Cart = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item.productId, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                         >
                           <Minus className="h-4 w-4" />
@@ -157,7 +113,7 @@ const Cart = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -177,7 +133,7 @@ const Cart = () => {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span>₹{subtotal}</span>
+                  <span>₹{totalAmount}</span>
                 </div>
                 
                 {discount > 0 && (
@@ -207,7 +163,7 @@ const Cart = () => {
 
               {shipping > 0 && (
                 <p className="text-sm text-muted-foreground mt-3">
-                  Add ₹{500 - subtotal} more to get free shipping!
+                  Add ₹{500 - totalAmount} more to get free shipping!
                 </p>
               )}
             </Card>
