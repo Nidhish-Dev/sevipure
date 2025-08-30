@@ -1,27 +1,41 @@
 import { useState, useEffect } from "react";
-import { Filter, Grid3x3, List, Search } from "lucide-react";
+import { Grid3x3, List, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import ProductCard from "@/components/Product/ProductCard";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
+import ProductCard from "@/components/Product/ProductCard";
+import { motion, AnimatePresence } from "framer-motion";
+
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  rating?: number;
+  createdAt?: string;
+  [key: string]: any;
+}
 
 const Products = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showFilters, setShowFilters] = useState(false);
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortOption, setSortOption] = useState<string>("popularity");
+  const [page, setPage] = useState(1);
+  const productsPerPage = 9;
 
   useEffect(() => {
     setLoading(true);
     fetch("https://sevipure-server.onrender.com/api/products")
       .then((res) => res.json())
       .then((data) => {
-        setProducts(data.products || []);
+        const fetchedProducts = (data.products || []) as Product[];
+        setProducts(fetchedProducts);
+        setFilteredProducts(fetchedProducts);
         setLoading(false);
       })
       .catch(() => {
@@ -30,42 +44,92 @@ const Products = () => {
       });
   }, []);
 
-  const categories = [
-    "Cold-Pressed Oils",
-    "Cooking Oils",
-    "Virgin Oils",
-    "Premium Oils",
-    "Organic Spices",
-    "Farm Fresh Honey",
-  ];
+  // Handle search and sort
+  useEffect(() => {
+    let updatedProducts = [...products];
 
-  const priceRanges = [
-    "Under ₹200",
-    "₹200 - ₹400",
-    "₹400 - ₹600",
-    "Above ₹600",
-  ];
+    // Filter by search query
+    if (searchQuery.trim()) {
+      updatedProducts = updatedProducts.filter((product) =>
+        product.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort products
+    switch (sortOption) {
+      case "price-low":
+        updatedProducts.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high":
+        updatedProducts.sort((a, b) => b.price - a.price);
+        break;
+      case "rating":
+        updatedProducts.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        break;
+      case "newest":
+        updatedProducts.sort((a, b) =>
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+        break;
+      default:
+        // Popularity (default, no specific sorting logic, assume API returns popular first)
+        break;
+    }
+
+    setFilteredProducts(updatedProducts);
+    setPage(1); // Reset to first page on search or sort
+  }, [searchQuery, sortOption, products]);
+
+  const paginate = (data: Product[]) => {
+    const start = (page - 1) * productsPerPage;
+    return data.slice(start, start + productsPerPage);
+  };
+
+  // Animation variants for product cards
+  const cardVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { duration: 0.3, ease: "easeInOut" } },
+    exit: { opacity: 0, transition: { duration: 0.2, ease: "easeInOut" } }
+  };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-green-50/50">
       <Navbar />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Shop All Products</h1>
-          <p className="text-muted-foreground">Discover our complete range of organic products</p>
-        </div>
-        {/* Search and Filters Bar */}
-        <div className="mb-8 space-y-4">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search products..." className="pl-10" />
-            </div>
-            {/* Sort */}
-            <Select>
-              <SelectTrigger className="w-full lg:w-48">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeInOut" }}
+          className="mb-10 text-center"
+        >
+          <h1 className="text-3xl md:text-5xl font-extrabold text-gray-900 mb-3 tracking-tight">
+            Shop All Products
+          </h1>
+          <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto">
+            Discover our premium range of organic products
+          </p>
+        </motion.div>
+
+        {/* Search and Sort Bar */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="mb-10 flex flex-col lg:flex-row gap-4 items-center justify-between"
+        >
+          <div className="relative w-full lg:w-1/3">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Input
+              placeholder="Search products..."
+              className="pl-10 pr-4 py-2 w-full bg-white border-gray-200 focus:ring-2 focus:ring-green-500 rounded-lg shadow-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-4 items-center">
+            <Select value={sortOption} onValueChange={setSortOption}>
+              <SelectTrigger className="w-48 bg-white border-gray-200 focus:ring-2 focus:ring-green-500 rounded-lg shadow-sm">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -76,93 +140,122 @@ const Products = () => {
                 <SelectItem value="newest">Newest First</SelectItem>
               </SelectContent>
             </Select>
-            {/* View Mode */}
             <div className="flex gap-2">
-              <Button variant={viewMode === "grid" ? "default" : "outline"} size="sm" onClick={() => setViewMode("grid")}> <Grid3x3 className="h-4 w-4" /> </Button>
-              <Button variant={viewMode === "list" ? "default" : "outline"} size="sm" onClick={() => setViewMode("list")}> <List className="h-4 w-4" /> </Button>
+              <Button
+                variant={viewMode === "grid" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className={`rounded-lg ${viewMode === "grid" ? "bg-green-600 hover:bg-green-700 text-white" : "border-gray-200 text-gray-900 hover:bg-green-50"}`}
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className={`rounded-lg ${viewMode === "list" ? "bg-green-600 hover:bg-green-700 text-white" : "border-gray-200 text-gray-900 hover:bg-green-50"}`}
+              >
+                <List className="h-4 w-4" />
+              </Button>
             </div>
-            {/* Filter Toggle */}
-            <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden"> <Filter className="h-4 w-4 mr-2" /> Filters </Button>
           </div>
-        </div>
-        <div className="flex gap-8">
-          {/* Sidebar Filters */}
-          <div className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-64 space-y-6`}>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Categories</h3>
-                <div className="space-y-3">
-                  {categories.map((category) => (
-                    <div key={category} className="flex items-center space-x-2">
-                      <Checkbox id={category} />
-                      <label htmlFor={category} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{category}</label>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Price Range</h3>
-                <div className="space-y-3">
-                  {priceRanges.map((range) => (
-                    <div key={range} className="flex items-center space-x-2">
-                      <Checkbox id={range} />
-                      <label htmlFor={range} className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">{range}</label>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-6">
-                <h3 className="font-semibold mb-4">Features</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="organic" />
-                    <label htmlFor="organic" className="text-sm font-medium">Organic Certified</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="cold-pressed" />
-                    <label htmlFor="cold-pressed" className="text-sm font-medium">Cold-Pressed</label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="on-sale" />
-                    <label htmlFor="on-sale" className="text-sm font-medium">On Sale</label>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          {/* Products Grid */}
-          <div className="flex-1">
-            <div className="mb-4 flex justify-between items-center">
-              <span className="text-muted-foreground">Showing {products.length} products</span>
-            </div>
-            <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}>
+        </motion.div>
+
+        {/* Products Section */}
+        <div className="flex-1">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4 }}
+            className="mb-6 flex justify-between items-center"
+          >
+            <span className="text-gray-600 font-medium">
+              Showing {filteredProducts.length} products
+            </span>
+          </motion.div>
+          <div
+            className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3" : "grid-cols-1"}`}
+          >
+            <AnimatePresence>
               {loading ? (
-                <div className="col-span-3 text-center">Loading products...</div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full text-center text-gray-600 font-medium"
+                >
+                  Loading products...
+                </motion.div>
               ) : error ? (
-                <div className="col-span-3 text-center text-red-500">{error}</div>
-              ) : products.length === 0 ? (
-                <div className="col-span-3 text-center">No products found.</div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full text-center text-red-500 font-medium"
+                >
+                  {error}
+                </motion.div>
+              ) : filteredProducts.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full text-center text-gray-600 font-medium"
+                >
+                  No products found.
+                </motion.div>
               ) : (
-                products.map((product) => (
-                  <ProductCard key={product._id} product={product} />
+                paginate(filteredProducts).map((product) => (
+                  <motion.div
+                    key={product._id}
+                    variants={cardVariants}
+                    initial="hidden"
+                    animate="visible"
+                    exit="exit"
+                  >
+                    <ProductCard product={product} />
+                  </motion.div>
                 ))
               )}
-            </div>
-            {/* Pagination */}
-            <div className="mt-12 flex justify-center">
-              <div className="flex gap-2">
-                <Button variant="outline" disabled>Previous</Button>
-                <Button variant="default">1</Button>
-                <Button variant="outline">2</Button>
-                <Button variant="outline">3</Button>
-                <Button variant="outline">Next</Button>
-              </div>
-            </div>
+            </AnimatePresence>
           </div>
+          {/* Pagination */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.4, delay: 0.2 }}
+            className="mt-12 flex justify-center"
+          >
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="border-gray-200 text-gray-900 hover:bg-green-50 rounded-lg"
+              >
+                Previous
+              </Button>
+              {Array.from({ length: Math.ceil(filteredProducts.length / productsPerPage) }, (_, i) => i + 1).map(
+                (pageNum) => (
+                  <Button
+                    key={pageNum}
+                    variant={page === pageNum ? "default" : "outline"}
+                    onClick={() => setPage(pageNum)}
+                    className={`${
+                      page === pageNum ? "bg-green-600 hover:bg-green-700 text-white" : "border-gray-200 text-gray-900 hover:bg-green-50"
+                    } rounded-lg`}
+                  >
+                    {pageNum}
+                  </Button>
+                )
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setPage((prev) => prev + 1)}
+                disabled={page === Math.ceil(filteredProducts.length / productsPerPage)}
+                className="border-gray-200 text-gray-900 hover:bg-green-50 rounded-lg"
+              >
+                Next
+              </Button>
+            </div>
+          </motion.div>
         </div>
       </div>
       <Footer />

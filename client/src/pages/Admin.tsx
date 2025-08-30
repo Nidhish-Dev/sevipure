@@ -80,9 +80,9 @@ const OrderRow: React.FC<OrderRowProps> = ({ order, expandedOrder, toggleOrderDe
       <td className="p-3">₹{order.totalAmount}</td>
       <td className="p-3">
         {order.status === 'Delivered' ? (
-          <span className="text-green-600">{order.status}</span>
+          <span className="text-green-600 font-medium">{order.status}</span>
         ) : (
-          <span className="text-yellow-600">{order.status}</span>
+          <span className="text-yellow-600 font-medium">{order.status}</span>
         )}
       </td>
       <td className="p-3">{order.createdAt ? new Date(order.createdAt).toLocaleString() : ''}</td>
@@ -192,8 +192,10 @@ export default function AdminPage() {
       })
         .then(res => res.json())
         .then(data => {
-          console.log('Fetched orders:', data.orders); // Debug: Log order IDs
-          setOrders((data.orders || []) as Order[]);
+          const sortedOrders = (data.orders || []).sort((a: Order, b: Order) => 
+            new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime()
+          );
+          setOrders(sortedOrders as Order[]);
           setOrdersLoading(false);
         })
         .catch(() => {
@@ -302,7 +304,6 @@ export default function AdminPage() {
   };
 
   const handleMarkDelivered = async (id: string) => {
-    console.log(`Calling endpoint: https://sevipure-server.onrender.com/api/order/${id}/delivered`); // Debug: Log endpoint
     if (!window.confirm('Mark this order as delivered?')) return;
     try {
       const res = await fetch(`https://sevipure-server.onrender.com/api/order/${id}/delivered`, {
@@ -313,7 +314,6 @@ export default function AdminPage() {
         }
       });
       const data = await res.json();
-      console.log('Response from /delivered:', data); // Debug: Log response
       if (res.ok) {
         setOrders(prev => prev.map(o => o._id === id ? { ...o, status: 'Delivered' } : o));
         setOrdersError('');
@@ -323,7 +323,6 @@ export default function AdminPage() {
         setOrdersError(data.message || 'Failed to update order status');
       }
     } catch (error) {
-      console.error('Error marking order as delivered:', error);
       setOrdersError('Failed to update order status. Check server connection.');
     }
   };
@@ -337,10 +336,12 @@ export default function AdminPage() {
     return data.slice(start, start + perPage);
   };
 
+  const totalProfit = orders.reduce((acc, o) => acc + o.totalAmount, 0);
+  const totalItemsSold = orders.reduce((acc, o) => acc + o.items.reduce((iacc, i) => iacc + i.quantity, 0), 0);
+
   if (!authenticated) {
     return (
       <div className="min-h-screen flex flex-col">
-
         <div className="flex-grow flex items-center justify-center bg-gray-100">
           <Card className="w-full max-w-md">
             <CardHeader>
@@ -371,12 +372,49 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
-      <main className="flex-grow py-8 md:py-16">
+      <main className="flex-grow py-8 md:py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 className="text-2xl md:text-4xl font-bold mb-8 md:mb-12 text-foreground">Admin Dashboard</h1>
+
+          {/* Stats Section */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <Card className="shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">{users.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Profit</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">₹{totalProfit.toFixed(2)}</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Items Sold</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">{totalItemsSold}</div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-md">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Orders</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-foreground">{orders.length}</div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Orders Table */}
-            <Card className="lg:col-span-2">
+            <Card className="lg:col-span-2 shadow-md">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold">Orders ({orders.length})</CardTitle>
               </CardHeader>
@@ -441,7 +479,7 @@ export default function AdminPage() {
             </Card>
 
             {/* Dashboard Actions */}
-            <Card>
+            <Card className="shadow-md">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold">Actions</CardTitle>
               </CardHeader>
@@ -462,7 +500,7 @@ export default function AdminPage() {
             </Card>
 
             {/* Products Table */}
-            <Card className="lg:col-span-3">
+            <Card className="lg:col-span-3 shadow-md">
               <CardHeader>
                 <CardTitle className="text-xl font-semibold">Products ({products.length})</CardTitle>
               </CardHeader>
@@ -496,7 +534,11 @@ export default function AdminPage() {
                             <td className="p-3">₹{p.price}</td>
                             <td className="p-3">{p.stockQuantity}</td>
                             <td className="p-3">
-                              {p.stockQuantity > 0 ? 'In Stock' : <span className="text-red-500">Out of Stock</span>}
+                              {p.stockQuantity > 0 ? (
+                                <span className="text-green-600 font-medium">In Stock</span>
+                              ) : (
+                                <span className="text-red-500 font-medium">Out of Stock</span>
+                              )}
                             </td>
                             <td className="p-3">
                               <Button
@@ -527,7 +569,7 @@ export default function AdminPage() {
           {/* Users Modal */}
           {showUsersModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <Card className="w-full max-w-4xl">
+              <Card className="w-full max-w-4xl shadow-lg">
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-xl font-semibold">Users ({users.length})</CardTitle>
@@ -602,7 +644,7 @@ export default function AdminPage() {
           {/* Product Modal */}
           {showProductModal && (
             <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <Card className="w-full max-w-lg">
+              <Card className="w-full max-w-lg shadow-lg">
                 <CardHeader>
                   <div className="flex justify-between items-center">
                     <CardTitle className="text-xl font-semibold">Add New Product</CardTitle>

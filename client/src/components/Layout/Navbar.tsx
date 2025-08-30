@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, LogOut, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,17 +13,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+interface Product {
+  _id: string;
+  name: string;
+}
+
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [suggestions, setSuggestions] = useState<Product[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [searchError, setSearchError] = useState<string>("");
   const { user, isAuthenticated, logout } = useAuth();
   const { cartCount } = useCart();
+  const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     setIsMenuOpen(false);
   };
 
-  // Get display name (full name or first name if full name is not available)
   const getDisplayName = (): string => {
     if (user?.fullName) {
       return user.fullName;
@@ -32,6 +42,58 @@ const Navbar = () => {
       return `${user.firstName} ${user.lastName}`;
     }
     return user?.firstName || 'User';
+  };
+
+  const fetchSuggestions = async (query: string) => {
+    if (!query.trim()) {
+      setSuggestions([]);
+      setSearchError("");
+      setIsSearchOpen(false);
+      return;
+    }
+    setIsLoading(true);
+    setSearchError("");
+    try {
+      const sanitizedQuery = query.replace(/[^a-zA-Z0-9\s]/g, "").trim();
+      if (!sanitizedQuery) {
+        setSuggestions([]);
+        setSearchError("Invalid search query.");
+        setIsSearchOpen(true);
+        return;
+      }
+      const response = await fetch(`https://sevipure-server.onrender.com/api/products`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch products");
+      }
+      const data = await response.json();
+      const products: Product[] = data.products || [];
+      const filteredProducts = products.filter((product: Product) =>
+        product.name.toLowerCase().includes(sanitizedQuery.toLowerCase())
+      );
+      setSuggestions(filteredProducts);
+      setIsSearchOpen(true);
+    } catch (err) {
+      setSearchError("Unable to load search results. Please try again later.");
+      setSuggestions([]);
+      setIsSearchOpen(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchSuggestions(searchQuery);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const handleSuggestionClick = (productName: string) => {
+    setSearchQuery("");
+    setSuggestions([]);
+    setSearchError("");
+    setIsSearchOpen(false);
+    navigate(`/products?search=${encodeURIComponent(productName)}`);
   };
 
   return (
@@ -52,8 +114,31 @@ const Navbar = () => {
                 type="text"
                 placeholder="Search for organic products..."
                 className="pl-10 pr-4 w-full rounded-lg"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {isSearchOpen && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-60 overflow-y-auto">
+                  {isLoading ? (
+                    <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+                  ) : searchError ? (
+                    <div className="px-4 py-2 text-sm text-red-500">{searchError}</div>
+                  ) : suggestions.length > 0 ? (
+                    suggestions.map((product) => (
+                      <div
+                        key={product._id}
+                        className="px-4 py-2 text-sm text-gray-700 hover:bg-primary/10 cursor-pointer"
+                        onClick={() => handleSuggestionClick(product.name)}
+                      >
+                        {product.name}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2 text-sm text-gray-500">No products found.</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -64,9 +149,6 @@ const Navbar = () => {
             </Link>
             <Link to="/products" className="text-foreground hover:text-primary transition-colors">
               Products
-            </Link>
-            <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
-              Contact
             </Link>
             {isAuthenticated && (
               <Link to="/my-orders" className="text-foreground hover:text-primary transition-colors">
@@ -113,7 +195,9 @@ const Navbar = () => {
                 </Link>
               </Button>
             )}
-            
+            <Link to="/contact" className="text-foreground hover:text-primary transition-colors">
+              Contact
+            </Link>
             <Button variant="ghost" size="sm" className="relative" asChild>
               <Link to="/cart">
                 <ShoppingCart className="h-4 w-4" />
@@ -152,8 +236,31 @@ const Navbar = () => {
                   type="text"
                   placeholder="Search products..."
                   className="pl-10 pr-4 py-3 text-base rounded-lg"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                {isSearchOpen && (
+                  <div className="mt-2 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {isLoading ? (
+                      <div className="px-4 py-2 text-sm text-gray-500">Loading...</div>
+                    ) : searchError ? (
+                      <div className="px-4 py-2 text-sm text-red-500">{searchError}</div>
+                    ) : suggestions.length > 0 ? (
+                      suggestions.map((product) => (
+                        <div
+                          key={product._id}
+                          className="px-4 py-2 text-sm text-gray-700 hover:bg-primary/10 cursor-pointer"
+                          onClick={() => handleSuggestionClick(product.name)}
+                        >
+                          {product.name}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-4 py-2 text-sm text-gray-500">No products found.</div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Mobile Navigation Links */}
@@ -171,13 +278,6 @@ const Navbar = () => {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Products
-                </Link>
-                <Link
-                  to="/contact"
-                  className="block px-4 py-3 text-lg font-medium text-foreground hover:bg-primary/10 hover:text-primary transition-colors rounded-md"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Contact
                 </Link>
                 {isAuthenticated && (
                   <Link
@@ -200,6 +300,18 @@ const Navbar = () => {
                         Profile
                       </Link>
                     </Button>
+                   
+                    <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Cart
+                        {cartCount > 0 && (
+                          <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Link>
+                    </Button>
                     <Button variant="outline" size="lg" className="w-full text-lg" asChild>
                       <Link to="/my-orders" onClick={() => setIsMenuOpen(false)}>
                         My Orders
@@ -209,27 +321,38 @@ const Navbar = () => {
                       <LogOut className="h-5 w-5 mr-2" />
                       Logout
                     </Button>
+                     <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/contact" onClick={() => setIsMenuOpen(false)}>
+                        Contact
+                      </Link>
+                    </Button>
                   </>
                 ) : (
-                  <Button variant="outline" size="lg" className="w-full text-lg" asChild>
-                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                      <User className="h-5 w-5 mr-2" />
-                      Login
-                    </Link>
-                  </Button>
+                  <>
+                    <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                        <User className="h-5 w-5 mr-2" />
+                        Login
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full text-lg" asChild>
+                      <Link to="/contact" onClick={() => setIsMenuOpen(false)}>
+                        Contact
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="lg" className="w-full relative text-lg" asChild>
+                      <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
+                        <ShoppingCart className="h-5 w-5 mr-2" />
+                        Cart
+                        {cartCount > 0 && (
+                          <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Link>
+                    </Button>
+                  </>
                 )}
-                
-                <Button variant="outline" size="lg" className="w-full relative text-lg" asChild>
-                  <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
-                    <ShoppingCart className="h-5 w-5 mr-2" />
-                    Cart
-                    {cartCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs rounded-full h-6 w-6 flex items-center justify-center">
-                        {cartCount}
-                      </span>
-                    )}
-                  </Link>
-                </Button>
               </div>
             </div>
           </div>

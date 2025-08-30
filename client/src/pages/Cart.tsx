@@ -2,9 +2,7 @@ import { useState } from "react";
 import { Minus, Plus, Trash2, ShoppingCart, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import Navbar from "@/components/Layout/Navbar";
@@ -13,18 +11,10 @@ import Footer from "@/components/Layout/Footer";
 const Cart = () => {
   const navigate = useNavigate();
   const { items: cartItems, updateQuantity, removeFromCart, totalAmount } = useCart();
-  const [promoCode, setPromoCode] = useState("");
 
-  // Calculate shipping and tax based on actual cart total
-  const shipping = totalAmount > 500 ? 0 : 50;
-  const discount = cartItems.reduce((sum, item) => {
-    if (item.originalPrice && item.originalPrice > item.price) {
-      return sum + ((item.originalPrice - item.price) * item.quantity);
-    }
-    return sum;
-  }, 0);
-  const tax = Math.round(totalAmount * 0.18); // 18% GST
-  const total = totalAmount + shipping + tax;
+  // Shipping is always free
+  const shipping = 0;
+  const total = totalAmount + shipping;
 
   if (cartItems.length === 0) {
     return (
@@ -136,21 +126,9 @@ const Cart = () => {
                   <span>₹{totalAmount}</span>
                 </div>
                 
-                {discount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount</span>
-                    <span>-₹{discount}</span>
-                  </div>
-                )}
-                
                 <div className="flex justify-between">
                   <span>Shipping</span>
-                  <span>{shipping === 0 ? "Free" : `₹${shipping}`}</span>
-                </div>
-                
-                <div className="flex justify-between">
-                  <span>Tax (GST)</span>
-                  <span>₹{tax}</span>
+                  <span>Free</span>
                 </div>
                 
                 <Separator />
@@ -159,25 +137,6 @@ const Cart = () => {
                   <span>Total</span>
                   <span>₹{total}</span>
                 </div>
-              </div>
-
-              {shipping > 0 && (
-                <p className="text-sm text-muted-foreground mt-3">
-                  Add ₹{500 - totalAmount} more to get free shipping!
-                </p>
-              )}
-            </Card>
-
-            {/* Promo Code */}
-            <Card className="p-6">
-              <h4 className="font-semibold mb-3">Promo Code</h4>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter promo code"
-                  value={promoCode}
-                  onChange={(e) => setPromoCode(e.target.value)}
-                />
-                <Button variant="outline">Apply</Button>
               </div>
             </Card>
 
@@ -197,7 +156,7 @@ const Cart = () => {
         </div>
       </div>
 
-      <Footer />
+
     </div>
   );
 };

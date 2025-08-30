@@ -1,19 +1,28 @@
 const express = require('express');
 const router = express.Router();
-const authController = require('../controllers/authController');
+const {
+  sendLoginOTP,
+  verifyOTPAndLogin,
+  resendOTP,
+  signup,
+  sendSignupOTP,
+  verifySignupOTP,
+  getProfile,
+  updateProfile,
+  logout,
+  getAllUsers
+} = require('../controllers/authController');
 const { authenticateToken } = require('../utils/auth');
-const { getAllUsers } = require('../controllers/authController');
 
-// Public routes
-router.post('/signup', authController.signup);
-router.post('/send-otp', authController.sendLoginOTP);
-router.post('/verify-otp', authController.verifyOTPAndLogin);
-router.post('/resend-otp', authController.resendOTP);
-
-// Protected routes
-router.get('/profile', authenticateToken, authController.getProfile);
-router.put('/profile', authenticateToken, authController.updateProfile);
-router.post('/logout', authenticateToken, authController.logout);
+router.post('/send-otp', sendSignupOTP);
+router.post('/verify-otp-signup', verifySignupOTP);
+router.post('/signup', signup);
+router.post('/login-otp', sendLoginOTP);
+router.post('/verify-otp', verifyOTPAndLogin);
+router.post('/resend-otp', resendOTP);
+router.get('/profile', authenticateToken, getProfile);
+router.patch('/profile', authenticateToken, updateProfile);
+router.post('/logout', authenticateToken, logout);
 router.get('/users', authenticateToken, getAllUsers);
 
 module.exports = router;
