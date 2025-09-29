@@ -75,7 +75,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const response = await fetch('https://sevipure-server.onrender.com/api/auth/send-otp', {
+      const response = await fetch('https://sevipure-server.onrender.com/api/auth/login-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

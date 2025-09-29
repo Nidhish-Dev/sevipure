@@ -1,22 +1,32 @@
 const nodemailer = require('nodemailer');
 
-// Create transporter
+// Create a pooled transporter for better connection reuse
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587, // TLS port
+  secure: false, // Use TLS
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
+  pool: true, // Enable connection pooling
+  maxConnections: 5, // Limit concurrent connections
+  connectionTimeout: 15000, // 15 seconds
+  greetingTimeout: 15000,
+  socketTimeout: 15000,
+  logger: true, // Enable logging
+  debug: true, // Enable debug output
 });
 
-// Send OTP email
 const sendOTPEmail = async (email, otp) => {
   try {
+    // Validate environment variables
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.EMAIL_FROM) {
-      throw new Error('Missing email environment variables');
+      throw new Error('Missing email environment variables: EMAIL_USER, EMAIL_PASS, or EMAIL_FROM');
     }
+
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
       to: email,
       subject: 'Your Login OTP - Sevipure',
       html: `
@@ -40,10 +50,12 @@ const sendOTPEmail = async (email, otp) => {
             © 2025 <strong>SeviPure</strong>. All rights reserved.
           </div>
         </div>
-      `
+      `,
     };
+
+    console.log(`Attempting to send OTP email to ${email} with OTP ${otp}`);
     const info = await transporter.sendMail(mailOptions);
-    console.log('OTP email sent: ', info.messageId);
+    console.log('OTP email sent successfully: ', info.messageId);
     return true;
   } catch (error) {
     console.error('Error sending OTP email: ', error);
@@ -60,7 +72,7 @@ const sendOrderEmail = async (order, user) => {
     const fullName = [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ');
     const address = Object.values(order.address).filter(Boolean).join(', ');
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
       to: process.env.EMAIL_FROM,
       subject: `New Order Placed - ${order._id}`,
       html: `
@@ -86,8 +98,10 @@ const sendOrderEmail = async (order, user) => {
             © 2025 <strong>SeviPure</strong>. All rights reserved.
           </div>
         </div>
-      `
+      `,
     };
+
+    console.log(`Attempting to send order confirmation email for order ${order._id}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Order confirmation email sent: ', info.messageId);
     return true;
@@ -107,7 +121,7 @@ const sendOrderDeliveredEmail = async (order, user) => {
     const address = Object.values(order.address).filter(Boolean).join(', ');
     const deliveryTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
       to: user.email,
       subject: `Your SeviPure Order #${order._id} Has Been Delivered`,
       html: `
@@ -141,8 +155,10 @@ const sendOrderDeliveredEmail = async (order, user) => {
             © 2025 <strong>SeviPure</strong>. All rights reserved.
           </div>
         </div>
-      `
+      `,
     };
+
+    console.log(`Attempting to send delivery email for order ${order._id} to ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Delivery email sent: ', info.messageId);
     return true;
@@ -165,7 +181,7 @@ const sendNewUserEmail = async (user) => {
       .join(', ');
     const signupTime = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
       to: process.env.EMAIL_FROM,
       subject: `New User Signup - ${fullName}`,
       html: `
@@ -191,8 +207,10 @@ const sendNewUserEmail = async (user) => {
             © 2025 <strong>SeviPure</strong>. All rights reserved.
           </div>
         </div>
-      `
+      `,
     };
+
+    console.log(`Attempting to send new user email for ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('New user email sent: ', info.messageId);
     return true;
@@ -215,7 +233,7 @@ const sendOrderPlacedEmail = async (order, user) => {
       .join(', ');
     const placedTime = new Date(order.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     const mailOptions = {
-      from: process.env.EMAIL_FROM,
+      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
       to: user.email,
       subject: `Your SeviPure Order #${order._id} Has Been Placed`,
       html: `
@@ -249,8 +267,10 @@ const sendOrderPlacedEmail = async (order, user) => {
             © 2025 <strong>SeviPure</strong>. All rights reserved.
           </div>
         </div>
-      `
+      `,
     };
+
+    console.log(`Attempting to send order placed email for order ${order._id} to ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Order placed email sent: ', info.messageId);
     return true;
@@ -265,5 +285,5 @@ module.exports = {
   sendOrderEmail,
   sendOrderDeliveredEmail,
   sendNewUserEmail,
-  sendOrderPlacedEmail
+  sendOrderPlacedEmail,
 };

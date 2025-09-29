@@ -175,9 +175,22 @@ const sendSignupOTP = async (req, res) => {
         message: existingUser.email === email ? 'Email already registered' : 'Phone number already registered' 
       });
     }
+
+    const otp = generateOTP();
+    console.log(`Generated OTP for signup: email=${email}, otp=${otp}`);
+
+    // Send email first to avoid orphaned records
+    const emailSent = await sendOTPEmail(email, otp);
+    if (!emailSent) {
+      console.log(`Failed to send OTP email to ${email}`);
+      return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    }
+
+    // Clean up any existing records
     await PendingUser.deleteOne({ email });
     await OTP.deleteOne({ email });
-    const otp = generateOTP();
+
+    // Create new OTP record
     const otpRecord = new OTP({
       email,
       otp,
@@ -186,6 +199,8 @@ const sendSignupOTP = async (req, res) => {
     });
     await otpRecord.save();
     console.log(`OTP created: email=${email}, otp=${otp}, expiresAt=${otpRecord.expiresAt}`);
+
+    // Create new PendingUser record
     const pendingUser = new PendingUser({
       firstName,
       middleName: userData.middleName || '',
@@ -197,13 +212,7 @@ const sendSignupOTP = async (req, res) => {
     });
     await pendingUser.save();
     console.log(`PendingUser created: id=${pendingUser._id}, email=${email}`);
-    const emailSent = await sendOTPEmail(email, otp);
-    if (!emailSent) {
-      console.log(`Failed to send OTP email to ${email}`);
-      await PendingUser.deleteOne({ _id: pendingUser._id });
-      await OTP.deleteOne({ _id: otpRecord._id });
-      return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
-    }
+
     res.status(200).json({ 
       message: 'OTP sent successfully',
       email,
@@ -211,6 +220,9 @@ const sendSignupOTP = async (req, res) => {
     });
   } catch (error) {
     console.error('Send signup OTP error:', error);
+    // Clean up if email sending fails
+    await PendingUser.deleteOne({ email: req.body.email });
+    await OTP.deleteOne({ email: req.body.email });
     res.status(500).json({ message: 'Internal server error' });
   }
 };
