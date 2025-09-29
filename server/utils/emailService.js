@@ -1,7 +1,8 @@
+
 const nodemailer = require('nodemailer');
 
-// Create a pooled transporter for better connection reuse
-const transporter = nodemailer.createTransport({
+// Create transporter without pooling for testing
+const createTransporter = () => nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 587, // TLS port
   secure: false, // Use TLS
@@ -9,62 +10,81 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
-  pool: true, // Enable connection pooling
-  maxConnections: 5, // Limit concurrent connections
-  connectionTimeout: 15000, // 15 seconds
-  greetingTimeout: 15000,
-  socketTimeout: 15000,
+  connectionTimeout: 30000, // 30 seconds
+  greetingTimeout: 30000,
+  socketTimeout: 30000,
   logger: true, // Enable logging
   debug: true, // Enable debug output
+  tls: {
+    rejectUnauthorized: true, // Enforce secure TLS
+    minVersion: 'TLSv1.2', // Ensure modern TLS version
+  },
 });
 
-const sendOTPEmail = async (email, otp) => {
-  try {
-    // Validate environment variables
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.EMAIL_FROM) {
-      throw new Error('Missing email environment variables: EMAIL_USER, EMAIL_PASS, or EMAIL_FROM');
-    }
+const sendOTPEmail = async (email, otp, retries = 3) => {
+  let attempt = 0;
+  let lastError = null;
 
-    const mailOptions = {
-      from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
-      to: email,
-      subject: 'Your Login OTP - Sevipure',
-      html: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
-          <div style="background: #17692D; padding: 20px; text-align: center;">
-            <h2 style="color: #fff; margin: 0; font-size: 24px; font-weight: 600;">SeviPure Login OTP</h2>
-          </div>
-          <div style="padding: 30px; background-color: #f9fdf9;">
-            <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: center;">
-              Use the OTP below to securely log in to your <strong>Sevipure</strong> account:
-            </p>
-            <div style="background: #17692D; color: #fff; font-size: 28px; font-weight: bold; text-align: center; padding: 18px; border-radius: 8px; letter-spacing: 8px; margin: 0 auto; width: fit-content; box-shadow: 0 3px 10px rgba(23,105,45,0.3);">
-              ${otp}
+  while (attempt < retries) {
+    attempt++;
+    const transporter = createTransporter();
+    try {
+      // Validate environment variables
+      if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS || !process.env.EMAIL_FROM) {
+        throw new Error('Missing email environment variables: EMAIL_USER, EMAIL_PASS, or EMAIL_FROM');
+      }
+
+      const mailOptions = {
+        from: `"SeviPure" <${process.env.EMAIL_FROM}>`,
+        to: email,
+        subject: 'Your Login OTP - Sevipure',
+        html: `
+          <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+            <div style="background: #17692D; padding: 20px; text-align: center;">
+              <h2 style="color: #fff; margin: 0; font-size: 24px; font-weight: 600;">SeviPure Login OTP</h2>
             </div>
-            <p style="font-size: 14px; color: #555; margin-top: 25px; text-align: center; line-height: 1.6;">
-              ⏳ This OTP will expire in <strong>5 minutes</strong>.<br>
-              If you did not request this login, please ignore this email.
-            </p>
+            <div style="padding: 30px; background-color: #f9fdf9;">
+              <p style="font-size: 16px; color: #333; margin-bottom: 20px; text-align: center;">
+                Use the OTP below to securely log in to your <strong>Sevipure</strong> account:
+              </p>
+              <div style="background: #17692D; color: #fff; font-size: 28px; font-weight: bold; text-align: center; padding: 18px; border-radius: 8px; letter-spacing: 8px; margin: 0 auto; width: fit-content; box-shadow: 0 3px 10px rgba(23,105,45,0.3);">
+                ${otp}
+              </div>
+              <p style="font-size: 14px; color: #555; margin-top: 25px; text-align: center; line-height: 1.6;">
+                ⏳ This OTP will expire in <strong>5 minutes</strong>.<br>
+                If you did not request this login, please ignore this email.
+              </p>
+            </div>
+            <div style="background-color: #f1f8f3; padding: 15px; text-align: center; font-size: 12px; color: #666;">
+              © 2025 <strong>SeviPure</strong>. All rights reserved.
+            </div>
           </div>
-          <div style="background-color: #f1f8f3; padding: 15px; text-align: center; font-size: 12px; color: #666;">
-            © 2025 <strong>SeviPure</strong>. All rights reserved.
-          </div>
-        </div>
-      `,
-    };
+        `,
+      };
 
-    console.log(`Attempting to send OTP email to ${email} with OTP ${otp}`);
-    const info = await transporter.sendMail(mailOptions);
-    console.log('OTP email sent successfully: ', info.messageId);
-    return true;
-  } catch (error) {
-    console.error('Error sending OTP email: ', error);
-    throw new Error(`Failed to send OTP email: ${error.message}`);
+      console.log(`Attempt ${attempt}/${retries} to send OTP email to ${email} with OTP ${otp}`);
+      const info = await transporter.sendMail(mailOptions);
+      console.log('OTP email sent successfully: ', info.messageId);
+      transporter.close(); // Close connection
+      return true;
+    } catch (error) {
+      lastError = error;
+      console.error(`Attempt ${attempt}/${retries} failed: `, error);
+      if (attempt < retries) {
+        console.log(`Retrying in 2 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+      transporter.close(); // Close connection on error
+    }
   }
+
+  console.error('All retry attempts failed for OTP email');
+  throw new Error(`Failed to send OTP email: ${lastError.message}`);
 };
 
 // Send Order Confirmation Email (to admin)
 const sendOrderEmail = async (order, user) => {
+  const transporter = createTransporter();
   try {
     if (!process.env.EMAIL_FROM) {
       throw new Error('Missing EMAIL_FROM environment variable');
@@ -104,15 +124,18 @@ const sendOrderEmail = async (order, user) => {
     console.log(`Attempting to send order confirmation email for order ${order._id}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Order confirmation email sent: ', info.messageId);
+    transporter.close();
     return true;
   } catch (error) {
     console.error('Error sending order email: ', error);
+    transporter.close();
     throw new Error(`Failed to send order email: ${error.message}`);
   }
 };
 
 // Send Order Delivered Email (to user)
 const sendOrderDeliveredEmail = async (order, user) => {
+  const transporter = createTransporter();
   try {
     if (!process.env.EMAIL_FROM) {
       throw new Error('Missing EMAIL_FROM environment variable');
@@ -161,15 +184,18 @@ const sendOrderDeliveredEmail = async (order, user) => {
     console.log(`Attempting to send delivery email for order ${order._id} to ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Delivery email sent: ', info.messageId);
+    transporter.close();
     return true;
   } catch (error) {
     console.error('Error sending delivery email: ', error);
+    transporter.close();
     throw new Error(`Failed to send delivery email: ${error.message}`);
   }
 };
 
 // Send New User Email (to admin)
 const sendNewUserEmail = async (user) => {
+  const transporter = createTransporter();
   try {
     if (!process.env.EMAIL_FROM) {
       throw new Error('Missing EMAIL_FROM environment variable');
@@ -213,15 +239,18 @@ const sendNewUserEmail = async (user) => {
     console.log(`Attempting to send new user email for ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('New user email sent: ', info.messageId);
+    transporter.close();
     return true;
   } catch (error) {
     console.error('Error sending new user email: ', error);
+    transporter.close();
     throw new Error(`Failed to send new user email: ${error.message}`);
   }
 };
 
 // Send Order Placed Email (to user)
 const sendOrderPlacedEmail = async (order, user) => {
+  const transporter = createTransporter();
   try {
     if (!process.env.EMAIL_FROM) {
       throw new Error('Missing EMAIL_FROM environment variable');
@@ -273,9 +302,11 @@ const sendOrderPlacedEmail = async (order, user) => {
     console.log(`Attempting to send order placed email for order ${order._id} to ${user.email}`);
     const info = await transporter.sendMail(mailOptions);
     console.log('Order placed email sent: ', info.messageId);
+    transporter.close();
     return true;
   } catch (error) {
     console.error('Error sending order placed email: ', error);
+    transporter.close();
     throw new Error(`Failed to send order placed email: ${error.message}`);
   }
 };

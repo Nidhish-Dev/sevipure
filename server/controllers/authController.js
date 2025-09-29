@@ -179,10 +179,12 @@ const sendSignupOTP = async (req, res) => {
     const otp = generateOTP();
     console.log(`Generated OTP for signup: email=${email}, otp=${otp}`);
 
-    // Send email first to avoid orphaned records
-    const emailSent = await sendOTPEmail(email, otp);
-    if (!emailSent) {
-      console.log(`Failed to send OTP email to ${email}`);
+    // Send email with retries
+    let emailSent = false;
+    try {
+      emailSent = await sendOTPEmail(email, otp, 3); // 3 retries
+    } catch (emailError) {
+      console.error(`Failed to send OTP email to ${email}:`, emailError);
       return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
     }
 
